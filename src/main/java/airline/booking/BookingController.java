@@ -13,20 +13,21 @@ public class BookingController {
         this.service = service;
     }
 
-//    @GetMapping("/Booking/{id}")
-//    public String getBookingById(
-//            @PathVariable("id") Long id
-//            ) {
-//        System.out.println("log called method "+id);
-//        return service.getBookingById(id);
-//    }
+
+
+
+    @GetMapping()
+    public String test(
+            ) {
+        return service.test();
+    }
 
 
     //
     @PostMapping("/flights")
     public Flight addFlight(){
-//        throw  new UnsupportedOperationException("Not supported yet.");
-        
+        throw  new UnsupportedOperationException("Not supported yet.");
+
     }
 
     @GetMapping("/flights/{id}")
@@ -34,7 +35,7 @@ public class BookingController {
         throw  new UnsupportedOperationException("Not supported yet.");
     }
 
-    @GetMapping("/flights?from={airport}&to={airport}&date={date}")
+    @GetMapping("/flights?from={departureAirport}&to={arrivalAirport}&date={date}")
     public List<Flight> getFlights(){
         throw  new UnsupportedOperationException("Not supported yet.");
     }

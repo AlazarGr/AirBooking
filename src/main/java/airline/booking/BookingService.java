@@ -5,4 +5,7 @@ package airline.booking;
 public class BookingService {
 
 
+    public String test() {
+        return "Hi";
+    }
 }
