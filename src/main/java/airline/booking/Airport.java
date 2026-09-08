@@ -1,17 +1,35 @@
 package airline.booking;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.GeneratedValue;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.*;
 
 @Entity
 public class Airport {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
-    String IATA;
-    String name;
-    String city;
+    private Long id;
+    @Column(nullable = false)
+    private String iataCode;
+    @Column(nullable = false)
+    private String name;
+    @Column(nullable = false)
+    private String city;
+
+    public Airport() {}
+
+    public Airport(String json) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.readValue(json, Airport.class);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid JSON format", e);
+        }
+    }
+
+    public Airport(String IATA, String name, String city) {
+        this.iataCode = IATA;
+        this.name = name;
+        this.city = city;
+    }
 
     public Long getId() {
         return id;
@@ -21,12 +39,12 @@ public class Airport {
         this.id = id;
     }
 
-    public String getIATA() {
-        return IATA;
+    public String getIataCode() {
+        return iataCode;
     }
 
-    public void setIATA(String IATA) {
-        this.IATA = IATA;
+    public void setIataCode(String iataCode) {
+        this.iataCode = iataCode;
     }
 
     public String getName() {

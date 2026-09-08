@@ -1,5 +1,6 @@
 package airline.booking;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;
 
 import java.time.ZonedDateTime;
@@ -10,6 +11,7 @@ public class Booking {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
+    @Column(nullable = false)
     private long uniqueBookingCode;
     @ManyToOne
     @JoinColumn(name = "flight_id")
@@ -21,12 +23,36 @@ public class Booking {
             name = "booking_passenger", 
             joinColumns = @JoinColumn(name = "booking_id") 
     )
+    @Column(nullable = false)
     private List<Passenger> booking_passenger;
+    @Column(nullable = false)
     private ZonedDateTime creationDate;
     private ZonedDateTime confirmationDate = null;
     private ZonedDateTime cancellationDate = null;
+    @Column(nullable = false)
     private BookingStatus status;
 
+    public Booking() {}
+
+    public Booking(String json){
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.readValue(json, Booking.class);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid JSON format", e);
+        }
+    }
+
+    public Booking(long uniqueBookingCode, Flight flight, ClassOfService classOfService, List<Passenger> booking_passenger, ZonedDateTime creationDate, ZonedDateTime confirmationDate, ZonedDateTime cancellationDate, BookingStatus status) {
+        this.uniqueBookingCode = uniqueBookingCode;
+        this.flight = flight;
+        this.classOfService = classOfService;
+        this.booking_passenger = booking_passenger;
+        this.creationDate = creationDate;
+        this.confirmationDate = confirmationDate;
+        this.cancellationDate = cancellationDate;
+        this.status = status;
+    }
 
     public long getId() {
         return id;

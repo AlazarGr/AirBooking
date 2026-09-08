@@ -1,7 +1,7 @@
 package airline.booking;
 
 import jakarta.persistence.*;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.ZonedDateTime;
 
 @Entity
@@ -21,6 +21,29 @@ public class Flight {
     private Long numberOfEconomyClassSeats;
     private Long numberOfBusinessClassSeats;
     private FlightStatus status;
+
+
+    public Flight() {}
+
+    public Flight(String json){
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.readValue(json, Flight.class);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid JSON format", e);
+        }
+    }
+
+    public Flight(long number, Airport departureAirport, Airport arrivalAirport, ZonedDateTime departureDateTime, ZonedDateTime arrivalDateTime, Long numberOfEconomyClassSeats, Long numberOfBusinessClassSeats, FlightStatus status) {
+        this.number = number;
+        this.departureAirport = departureAirport;
+        this.arrivalAirport = arrivalAirport;
+        this.departureDateTime = departureDateTime;
+        this.arrivalDateTime = arrivalDateTime;
+        this.numberOfEconomyClassSeats = numberOfEconomyClassSeats;
+        this.numberOfBusinessClassSeats = numberOfBusinessClassSeats;
+        this.status = status;
+    }
 
     public long getId() {
         return id;
@@ -93,6 +116,4 @@ public class Flight {
     public void setStatus(FlightStatus status) {
         this.status = status;
     }
-
-    public Flight() {}
 }
