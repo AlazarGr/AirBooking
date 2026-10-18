@@ -14,41 +14,22 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     boolean existsByBookingCode(String bookingCode);
 
-//    @Query("""
-//        select count(b)
-//        from Booking b join b.passengers p
-//        where b.flight.id = :flightId
-//          and b.classOfService = :classOfService
-//          and b.status in (airline.booking.enums.BookingStatus.CREATED,
-//                           airline.booking.enums.BookingStatus.CONFIRMED)
-//        """)
-//    int countActivePassengersByFlightAndClass(@Param("flightId") Long flightId,
-//                                               @Param("classOfService") ClassOfService classOfService);
-
     @Query("""
-    SELECT COUNT(b)
+    SELECT COUNT(p)
     FROM Booking b
+    JOIN b.passengers p
     WHERE b.flight.id = :flightId
-      AND b.classOfService = :classOfService
-      AND b.status IN (
-          airline.booking.enums.BookingStatus.CREATED,
-          airline.booking.enums.BookingStatus.CONFIRMED
-      )
+        AND b.classOfService = :classOfService
+        AND b.status IN (
+            airline.booking.enums.BookingStatus.CREATED,
+            airline.booking.enums.BookingStatus.CONFIRMED
+        )
     """)
     long countActivePassengersByFlightAndClass(
             @Param("flightId") Long flightId,
             @Param("classOfService") ClassOfService classOfService
     );
-//    @Query("""
-//        select count(b) > 0
-//        from Booking b join b.passengers p
-//        where b.flight.id = :flightId
-//          and p.documentNumber = :documentNumber
-//          and b.status in (airline.booking.enums.BookingStatus.CREATED,
-//                           airline.booking.enums.BookingStatus.CONFIRMED)
-//        """)
-//    boolean existsActiveBookingForPassengerAndFlight(@Param("documentNumber") String documentNumber,
-//                                                     @Param("flightId") Long flightId);
+
 
     @Query("""
     SELECT COUNT(b)

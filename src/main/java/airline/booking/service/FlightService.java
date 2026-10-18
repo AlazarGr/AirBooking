@@ -58,6 +58,7 @@ public class FlightService {
 
     // ---------- API ----------
 
+    // PostFlights
     @Transactional
     public FlightResponse createFlight(FlightRequest request) {
         Airport departureAirport = airportService.getByIataCode(request.getDepartureAirportIataCode());
@@ -89,6 +90,7 @@ public class FlightService {
         return flightMapper.toResponse(saved, saved.getEconomySeats(), saved.getBusinessSeats());
     }
 
+    // GetFlights
     @Transactional(readOnly = true)
     public FlightResponse getFlightById(Long id) {
         return toResponse(getFlightEntityById(id));
