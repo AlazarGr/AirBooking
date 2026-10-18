@@ -1,7 +1,14 @@
-package airline.booking;
+package airline.booking.model;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import airline.booking.enums.BookingStatus;
+import airline.booking.enums.ClassOfService;
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -11,11 +18,19 @@ public class Booking {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
-    @Column(nullable = false)
-    private long uniqueBookingCode;
+
+    @NotNull
+    @Column(name = "booking_code", nullable = false, unique = true)
+    private String bookingCode;
+
+    @NotNull
     @ManyToOne
     @JoinColumn(name = "flight_id")
     private Flight flight;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "class_of_service", nullable = false)
     private ClassOfService classOfService;
 
     @ElementCollection 
@@ -24,30 +39,30 @@ public class Booking {
             joinColumns = @JoinColumn(name = "booking_id") 
     )
     @Column(nullable = false)
-    private List<Passenger> booking_passenger;
-    @Column(nullable = false)
+    @NotEmpty
+    @Size(min = 1, max = 5, message = "От 1 до 5 пассажиров в одном бронировании")
+    private List<@Valid Passenger> passengers;
+
+    @Column(name = "creation_date", nullable = false)
     private ZonedDateTime creationDate;
+
+    @Column(name = "confirmation_date")
     private ZonedDateTime confirmationDate = null;
+
+    @Column(name = "cancellation_date")
     private ZonedDateTime cancellationDate = null;
-    @Column(nullable = false)
+
+    @Column(name = "status", nullable = false)
+    @Enumerated(EnumType.STRING)
     private BookingStatus status;
 
     public Booking() {}
 
-    public Booking(String json){
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.readValue(json, Booking.class);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid JSON format", e);
-        }
-    }
-
-    public Booking(long uniqueBookingCode, Flight flight, ClassOfService classOfService, List<Passenger> booking_passenger, ZonedDateTime creationDate, ZonedDateTime confirmationDate, ZonedDateTime cancellationDate, BookingStatus status) {
-        this.uniqueBookingCode = uniqueBookingCode;
+    public Booking(String bookingCode, Flight flight, ClassOfService classOfService, List<Passenger> passengers, ZonedDateTime creationDate, ZonedDateTime confirmationDate, ZonedDateTime cancellationDate, BookingStatus status) {
+        this.bookingCode = bookingCode;
         this.flight = flight;
         this.classOfService = classOfService;
-        this.booking_passenger = booking_passenger;
+        this.passengers = passengers;
         this.creationDate = creationDate;
         this.confirmationDate = confirmationDate;
         this.cancellationDate = cancellationDate;
@@ -62,12 +77,12 @@ public class Booking {
         this.id = id;
     }
 
-    public long getUniqueBookingCode() {
-        return uniqueBookingCode;
+    public String getBookingCode() {
+        return bookingCode;
     }
 
-    public void setUniqueBookingCode(long uniqueBookingCode) {
-        this.uniqueBookingCode = uniqueBookingCode;
+    public void setBookingCode(@NotNull String bookingCode) {
+        this.bookingCode = bookingCode;
     }
 
     public Flight getFlight() {
@@ -86,12 +101,12 @@ public class Booking {
         this.classOfService = classOfService;
     }
 
-    public List<Passenger> getBooking_passenger() {
-        return booking_passenger;
+    public List<Passenger> getPassengers() {
+        return passengers;
     }
 
-    public void setBooking_passenger(List<Passenger> booking_passenger) {
-        this.booking_passenger = booking_passenger;
+    public void setPassengers(List<Passenger> passengers) {
+        this.passengers = passengers;
     }
 
     public ZonedDateTime getCreationDate() {

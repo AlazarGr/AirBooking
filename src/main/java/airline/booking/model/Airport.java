@@ -1,29 +1,24 @@
-package airline.booking;
+package airline.booking.model;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Pattern;
 
 @Entity
 public class Airport {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(nullable = false)
+
+    @Column(name = "iata_code", nullable = false, unique = true)
     private String iataCode;
+
     @Column(nullable = false)
     private String name;
+
     @Column(nullable = false)
     private String city;
 
     public Airport() {}
-
-    public Airport(String json) {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.readValue(json, Airport.class);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid JSON format", e);
-        }
-    }
 
     public Airport(String IATA, String name, String city) {
         this.iataCode = IATA;

@@ -1,0 +1,245 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: create-airport
+      author: alazar
+      changes:
+        - createTable:
+            tableName: airport
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: iata_code
+                  type: varchar(3)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_airport_iata_code
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: city
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: create-flight
+      author: alazar
+      changes:
+        - createTable:
+            tableName: flight
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: flight_number
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: departure_airport_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_flight_departure_airport
+                    references: airport(id)
+              - column:
+                  name: arrival_airport_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_flight_arrival_airport
+                    references: airport(id)
+              - column:
+                  name: departure_date_time
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: arrival_date_time
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: economy_seats
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: business_seats
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: flight
+            columnNames: flight_number, departure_date_time
+            constraintName: uq_flight_number_departure
+        - createIndex:
+            tableName: flight
+            indexName: idx_flight_search
+            columns:
+              - column:
+                  name: departure_airport_id
+              - column:
+                  name: arrival_airport_id
+              - column:
+                  name: departure_date_time
+
+  - changeSet:
+      id: create-booking
+      author: alazar
+      changes:
+        - createTable:
+            tableName: booking
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: booking_code
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_booking_code
+              - column:
+                  name: flight_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_booking_flight
+                    references: flight(id)
+              - column:
+                  name: class_of_service
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: creation_date
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: confirmation_date
+                  type: timestamp with time zone
+              - column:
+                  name: cancellation_date
+                  type: timestamp with time zone
+        - createIndex:
+            tableName: booking
+            indexName: idx_booking_flight
+            columns:
+              - column:
+                  name: flight_id
+
+  - changeSet:
+      id: create-booking-passenger
+      author: alazar
+      changes:
+        - createTable:
+            tableName: booking_passenger
+            columns:
+              - column:
+                  name: booking_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_booking_passenger_booking
+                    references: booking(id)
+              - column:
+                  name: full_name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: birth_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: document_number
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: booking_passenger
+            columnNames: booking_id, document_number
+            constraintName: uq_booking_passenger_document
+        - createIndex:
+            tableName: booking_passenger
+            indexName: idx_booking_passenger_document
+            columns:
+              - column:
+                  name: document_number
+  - changeSet:
+      id: airports-data
+      author: alazar
+
+      changes:
+        - insert:
+            tableName: airport
+            columns:
+              - column:
+                  name: iata_code
+                  value: SVO
+              - column:
+                  name: name
+                  value: Шереметьево
+              - column:
+                  name: city
+                  value: Москва
+
+        - insert:
+            tableName: airport
+            columns:
+              - column:
+                  name: iata_code
+                  value: OMS
+              - column:
+                  name: name
+                  value: Омск
+              - column:
+                  name: city
+                  value: Омск
+
+        - insert:
+            tableName: airport
+            columns:
+              - column:
+                  name: iata_code
+                  value: LED
+              - column:
+                  name: name
+                  value: Пулково
+              - column:
+                  name: city
+                  value: Санкт-Петербург
