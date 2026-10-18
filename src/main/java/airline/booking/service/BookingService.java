@@ -4,56 +4,32 @@ package airline.booking.service;
 import airline.booking.dto.request.BookingRequest;
 import airline.booking.dto.request.PassengerRequest;
 import airline.booking.dto.response.BookingResponse;
-import airline.booking.dto.response.PassengerResponse;
 import airline.booking.enums.BookingStatus;
 import airline.booking.enums.FlightStatus;
 import airline.booking.exception.BusinessException;
 import airline.booking.exception.EntityNotFoundException;
 import airline.booking.mapper.BookingMapper;
-import airline.booking.model.Airport;
 import airline.booking.model.Booking;
 import airline.booking.model.Flight;
-import airline.booking.model.Passenger;
-import airline.booking.repository.AirportRepository;
 import airline.booking.repository.BookingRepository;
-import airline.booking.repository.FlightRepository;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
 
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class BookingService {
 
     private static final String ALLOWED_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789";
     private static final int CODE_LENGTH = 6;
 
-    @Autowired
     private final BookingRepository bookingRepository;
-    @Autowired
     private final BookingMapper bookingMapper;
-    @Autowired
     private final FlightService flightService;
-    @Autowired
     private final AirportService airportService;
-
-    public BookingService(
-            BookingRepository bookingRepository,
-            BookingMapper bookingMapper,
-            AirportService airportService,
-            FlightService flightService
-    ) {
-
-        this.bookingRepository = bookingRepository;
-        this.bookingMapper = bookingMapper;
-        this.flightService = flightService;
-        this.airportService = airportService;
-    }
 
     // Суппорт методы
     private String generateUniqueBookingCode() {
@@ -89,7 +65,7 @@ public class BookingService {
 
 
     // реализации API
-    // @PostMapping("/bookings")
+//    @PostMapping("/bookings")
     public BookingResponse createBooking(BookingRequest request) {
         // 1. Найти рейс, иначе 404
         Flight flight = flightService.getFlightEntityById(request.getFlightId());
@@ -136,14 +112,14 @@ public class BookingService {
         return bookingMapper.toResponse(saved);
     }
 
-    // @GetMapping("/bookings/by-code/{bookingCode}")
+//    @GetMapping("/bookings/by-code/{bookingCode}")
     public BookingResponse getBookingByCode(String bookingCode) {
         Booking booking = bookingRepository.findByBookingCode(bookingCode)
                 .orElseThrow(() -> new EntityNotFoundException("Booking", "кодом", bookingCode));
         return bookingMapper.toResponse(booking);
     }
 
-    // @PostMapping("/bookings/{id}/confirm")
+//    @PostMapping("/bookings/{id}/confirm")
     public BookingResponse confirmBooking(Long id) {
         // 1. Найти бронирование, иначе 404
         Booking booking = bookingRepository.findById(id)
@@ -169,7 +145,7 @@ public class BookingService {
     }
 
 
-    // @PostMapping("/bookings/{id}/cancel")
+//    @PostMapping("/bookings/{id}/cancel")
     public BookingResponse cancelBooking(Long id) {
         // 1. Найти бронирование, иначе 404
         Booking booking = bookingRepository.findById(id)
