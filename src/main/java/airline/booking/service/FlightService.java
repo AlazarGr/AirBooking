@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 
@@ -24,12 +25,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FlightService {
 
+    private static final ZonedDateTime MIN_DATE = ZonedDateTime.of(2000, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+    private static final ZonedDateTime MAX_DATE = ZonedDateTime.of(2100, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+
     private final FlightRepository flightRepository;
     private final BookingRepository bookingRepository;
     private final AirportService airportService;
     private final FlightMapper flightMapper;
 
-    // ---------- вспомогательные методы ----------
+    // ---------- вспомогательные методы (нужны и BookingService) ----------
 
     @Transactional(readOnly = true)
     public Flight getFlightEntityById(Long flightId) {
@@ -56,15 +60,8 @@ public class FlightService {
         );
     }
 
-    // ---------- API ----------
-
-    // PostFlights
-    @Transactional
-    public FlightResponse createFlight(FlightRequest request) {
-        Airport departureAirport = airportService.getByIataCode(request.getDepartureAirportIataCode());
-        Airport arrivalAirport = airportService.getByIataCode(request.getArrivalAirportIataCode());
-
-        if (departureAirport.getId().equals(arrivalAirport.getId())) {
+    private void validateRoute(FlightRequest request, Airport departure, Airport arrival) {
+        if (departure.getId().equals(arrival.getId())) {
             throw new BusinessException("SAME_DEPARTURE_ARRIVAL_AIRPORT",
                     "Аэропорт отправления и аэропорт назначения не могут совпадать");
         }
@@ -74,15 +71,26 @@ public class FlightService {
         }
         if (request.getDepartureDateTime().isBefore(ZonedDateTime.now())) {
             throw new BusinessException("DEPARTURE_IN_PAST",
-                    "Нельзя создать рейс с датой отправления в прошлом");
+                    "Нельзя указать дату отправления в прошлом");
         }
+    }
+
+    // ---------- API ----------
+
+    // POST /flights
+    @Transactional
+    public FlightResponse createFlight(FlightRequest request) {
+        Airport departure = airportService.getByIataCode(request.getDepartureAirportIataCode());
+        Airport arrival = airportService.getByIataCode(request.getArrivalAirportIataCode());
+        validateRoute(request, departure, arrival);
+
         if (flightRepository.existsByFlightNumberAndDepartureDateTime(
                 request.getFlightNumber(), request.getDepartureDateTime())) {
             throw new BusinessException("DUPLICATE_FLIGHT",
                     "Рейс с таким номером и временем отправления уже существует");
         }
 
-        Flight flight = flightMapper.toEntity(request, departureAirport, arrivalAirport);
+        Flight flight = flightMapper.toEntity(request, departure, arrival);
         flight.setStatus(FlightStatus.SCHEDULED);
         Flight saved = flightRepository.save(flight);
 
@@ -90,23 +98,84 @@ public class FlightService {
         return flightMapper.toResponse(saved, saved.getEconomySeats(), saved.getBusinessSeats());
     }
 
-    // GetFlights
+    // GET /flights/{id}
     @Transactional(readOnly = true)
     public FlightResponse getFlightById(Long id) {
         return toResponse(getFlightEntityById(id));
     }
 
+    // GET /flights?from=&to=&date=  (+ необязательный arrivalDate)
     @Transactional(readOnly = true)
-    public List<FlightResponse> searchFlights(String from, String to, LocalDate date) {
+    public List<FlightResponse> searchFlights(String from, String to,
+                                              LocalDate departureDate, LocalDate arrivalDate) {
         ZoneId zone = ZoneId.systemDefault();
-        ZonedDateTime start = date.atStartOfDay(zone);
-        ZonedDateTime end = start.plusDays(1);
 
-        return flightRepository.search(from, to, start, end).stream()
+        ZonedDateTime depStart = departureDate != null ? departureDate.atStartOfDay(zone) : MIN_DATE;
+        ZonedDateTime depEnd = departureDate != null ? depStart.plusDays(1) : MAX_DATE;
+        ZonedDateTime arrStart = arrivalDate != null ? arrivalDate.atStartOfDay(zone) : MIN_DATE;
+        ZonedDateTime arrEnd = arrivalDate != null ? arrStart.plusDays(1) : MAX_DATE;
+
+        return flightRepository.search(from, to, depStart, depEnd, arrStart, arrEnd).stream()
                 .map(this::toResponse)
                 .toList();
     }
 
+    // GET /flights/all
+    @Transactional(readOnly = true)
+    public List<FlightResponse> getAllFlights() {
+        return flightRepository.findAll().stream().map(this::toResponse).toList();
+    }
+
+    // PUT /flights/{id}
+    @Transactional
+    public FlightResponse updateFlight(Long id, FlightRequest request) {
+        Flight flight = getFlightEntityById(id);
+
+        if (flight.getStatus() != FlightStatus.SCHEDULED) {
+            throw new BusinessException("FLIGHT_NOT_SCHEDULED",
+                    "Изменять можно только рейс в статусе SCHEDULED");
+        }
+
+        Airport departure = airportService.getByIataCode(request.getDepartureAirportIataCode());
+        Airport arrival = airportService.getByIataCode(request.getArrivalAirportIataCode());
+        validateRoute(request, departure, arrival);
+
+        if (flightRepository.existsByFlightNumberAndDepartureDateTimeAndIdNot(
+                request.getFlightNumber(), request.getDepartureDateTime(), id)) {
+            throw new BusinessException("DUPLICATE_FLIGHT",
+                    "Рейс с таким номером и временем отправления уже существует");
+        }
+
+        long occupiedEconomy = bookingRepository.countActivePassengersByFlightAndClass(id, ClassOfService.ECONOMY);
+        long occupiedBusiness = bookingRepository.countActivePassengersByFlightAndClass(id, ClassOfService.BUSINESS);
+        if (request.getEconomySeats() < occupiedEconomy || request.getBusinessSeats() < occupiedBusiness) {
+            throw new BusinessException("SEATS_BELOW_BOOKED",
+                    "Нельзя сделать мест меньше, чем уже занято бронированиями");
+        }
+
+        flight.setFlightNumber(request.getFlightNumber());
+        flight.setDepartureAirport(departure);
+        flight.setArrivalAirport(arrival);
+        flight.setDepartureDateTime(request.getDepartureDateTime());
+        flight.setArrivalDateTime(request.getArrivalDateTime());
+        flight.setEconomySeats(request.getEconomySeats());
+        flight.setBusinessSeats(request.getBusinessSeats());
+
+        return toResponse(flightRepository.save(flight));
+    }
+
+    // DELETE /flights/{id}
+    @Transactional
+    public void deleteFlight(Long id) {
+        Flight flight = getFlightEntityById(id);
+        if (bookingRepository.existsByFlightId(id)) {
+            throw new BusinessException("FLIGHT_HAS_BOOKINGS",
+                    "Нельзя удалить рейс, на который есть бронирования");
+        }
+        flightRepository.delete(flight);
+    }
+
+    // POST /flights/{id}/cancel   SCHEDULED -> CANCELLED
     @Transactional
     public FlightResponse cancelFlight(Long id) {
         Flight flight = getFlightEntityById(id);

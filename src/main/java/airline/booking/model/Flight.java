@@ -2,6 +2,9 @@ package airline.booking.model;
 
 import airline.booking.enums.FlightStatus;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 import java.time.ZonedDateTime;
 
@@ -9,6 +12,9 @@ import java.time.ZonedDateTime;
 @Table(name = "flight", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"flight_number", "departure_date_time"})
 })
+@Getter
+@Setter
+@RequiredArgsConstructor
 public class Flight {
 
     @Id
@@ -41,46 +47,4 @@ public class Flight {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private FlightStatus status;
-
-    public Flight() {}
-
-    public Flight(String flightNumber, Airport departureAirport, Airport arrivalAirport,
-                  ZonedDateTime departureDateTime, ZonedDateTime arrivalDateTime,
-                  int economySeats, int businessSeats, FlightStatus status) {
-        this.flightNumber = flightNumber;
-        this.departureAirport = departureAirport;
-        this.arrivalAirport = arrivalAirport;
-        this.departureDateTime = departureDateTime;
-        this.arrivalDateTime = arrivalDateTime;
-        this.economySeats = economySeats;
-        this.businessSeats = businessSeats;
-        this.status = status;
-    }
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getFlightNumber() { return flightNumber; }
-    public void setFlightNumber(String flightNumber) { this.flightNumber = flightNumber; }
-
-    public Airport getDepartureAirport() { return departureAirport; }
-    public void setDepartureAirport(Airport departureAirport) { this.departureAirport = departureAirport; }
-
-    public Airport getArrivalAirport() { return arrivalAirport; }
-    public void setArrivalAirport(Airport arrivalAirport) { this.arrivalAirport = arrivalAirport; }
-
-    public ZonedDateTime getDepartureDateTime() { return departureDateTime; }
-    public void setDepartureDateTime(ZonedDateTime departureDateTime) { this.departureDateTime = departureDateTime; }
-
-    public ZonedDateTime getArrivalDateTime() { return arrivalDateTime; }
-    public void setArrivalDateTime(ZonedDateTime arrivalDateTime) { this.arrivalDateTime = arrivalDateTime; }
-
-    public int getEconomySeats() { return economySeats; }
-    public void setEconomySeats(int economySeats) { this.economySeats = economySeats; }
-
-    public int getBusinessSeats() { return businessSeats; }
-    public void setBusinessSeats(int businessSeats) { this.businessSeats = businessSeats; }
-
-    public FlightStatus getStatus() { return status; }
-    public void setStatus(FlightStatus status) { this.status = status; }
 }

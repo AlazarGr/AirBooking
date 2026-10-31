@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 public interface FlightRepository extends JpaRepository<Flight, Long> {
@@ -23,4 +24,24 @@ public interface FlightRepository extends JpaRepository<Flight, Long> {
                         @Param("to") String to,
                         @Param("start") ZonedDateTime start,
                         @Param("end") ZonedDateTime end);
+
+    boolean existsByFlightNumberAndDepartureDateTimeAndIdNot(String flightNumber,
+                                                             ZonedDateTime departureDateTime,
+                                                             Long id);
+
+    @Query("""
+    select f from Flight f
+    where f.departureAirport.iataCode = :from
+      and f.arrivalAirport.iataCode = :to
+      and f.departureDateTime >= :depStart and f.departureDateTime < :depEnd
+      and f.arrivalDateTime >= :arrStart and f.arrivalDateTime < :arrEnd
+    order by f.departureDateTime
+    """)
+    List<Flight> search(@Param("from") String from,
+                        @Param("to") String to,
+                        @Param("depStart") ZonedDateTime depStart,
+                        @Param("depEnd") ZonedDateTime depEnd,
+                        @Param("arrStart") ZonedDateTime arrStart,
+                        @Param("arrEnd") ZonedDateTime arrEnd);
+
 }

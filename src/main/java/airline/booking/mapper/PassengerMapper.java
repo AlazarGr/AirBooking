@@ -16,8 +16,8 @@ public class PassengerMapper {
     public Passenger toEntity(PassengerRequest passengerRequest) {
         Passenger passenger = new Passenger();
         passenger.setFullName(passengerRequest.getFullName());
-        passenger.setBirthday(passengerRequest.getBirthDate());
-        passenger.setDocumentsNumber(passengerRequest.getDocumentNumber());
+        passenger.setBirthDay(passengerRequest.getBirthDate());
+        passenger.setDocumentNumber(passengerRequest.getDocumentNumber());
         return passenger;
     }
 
@@ -25,8 +25,8 @@ public class PassengerMapper {
     public PassengerResponse toResponse(Passenger passenger) {
         PassengerResponse passengerResponse = new PassengerResponse();
         passengerResponse.setFullName(passenger.getFullName());
-        passengerResponse.setBirthDate(passenger.getBirthday());
-        passengerResponse.setDocumentNumber(passenger.getDocumentsNumber());
+        passengerResponse.setBirthDate(passenger.getBirthDay());
+        passengerResponse.setDocumentNumber(passenger.getDocumentNumber());
         return passengerResponse;
     }
 

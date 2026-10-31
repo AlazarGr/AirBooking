@@ -243,3 +243,56 @@ databaseChangeLog:
               - column:
                   name: city
                   value: Санкт-Петербург
+
+
+  - changeSet:
+      id: create-app-user
+      author: alazar
+      changes:
+        - createTable:
+            tableName: app_user
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: username
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_app_user_username
+              - column:
+                  name: password
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: add-booking-owner
+      author: alazar
+      changes:
+        - addColumn:
+            tableName: booking
+            columns:
+              - column:
+                  name: owner_id
+                  type: bigint
+                  constraints:
+                    foreignKeyName: fk_booking_owner
+                    references: app_user(id)
+        - createIndex:
+            tableName: booking
+            indexName: idx_booking_owner
+            columns:
+              - column:
+                  name: owner_id

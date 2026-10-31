@@ -25,7 +25,7 @@ import java.util.List;
 @Service
 public class AirportService {
 
-    private final AirportRepository airportRepository; // экземпляр, его внедрит Spring
+    private final AirportRepository airportRepository;
 
     public AirportService(AirportRepository airportRepository) {
         this.airportRepository = airportRepository;

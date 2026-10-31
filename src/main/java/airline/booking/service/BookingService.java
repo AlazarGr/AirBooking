@@ -1,6 +1,5 @@
 package airline.booking.service;
 
-
 import airline.booking.dto.request.BookingRequest;
 import airline.booking.dto.request.PassengerRequest;
 import airline.booking.dto.response.BookingResponse;
@@ -9,14 +8,19 @@ import airline.booking.enums.FlightStatus;
 import airline.booking.exception.BusinessException;
 import airline.booking.exception.EntityNotFoundException;
 import airline.booking.mapper.BookingMapper;
+import airline.booking.model.AppUser;
 import airline.booking.model.Booking;
 import airline.booking.model.Flight;
+import airline.booking.repository.AppUserRepository;
 import airline.booking.repository.BookingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,12 +30,13 @@ public class BookingService {
     private static final String ALLOWED_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789";
     private static final int CODE_LENGTH = 6;
 
+    private final AppUserRepository userRepository;
     private final BookingRepository bookingRepository;
     private final BookingMapper bookingMapper;
     private final FlightService flightService;
-    private final AirportService airportService;
 
-    // Суппорт методы
+    // ---------- вспомогательные методы ----------
+
     private String generateUniqueBookingCode() {
         String code;
         do {
@@ -44,8 +49,7 @@ public class BookingService {
         Random random = new Random();
         StringBuilder sb = new StringBuilder(CODE_LENGTH);
         for (int i = 0; i < CODE_LENGTH; i++) {
-            int index = random.nextInt(ALLOWED_CHARS.length());
-            sb.append(ALLOWED_CHARS.charAt(index));
+            sb.append(ALLOWED_CHARS.charAt(random.nextInt(ALLOWED_CHARS.length())));
         }
         return sb.toString();
     }
@@ -56,41 +60,38 @@ public class BookingService {
                 .collect(Collectors.toSet());
 
         if (documentNumbers.size() != passengers.size()) {
-            throw new BusinessException(
-                    "DUPLICATE_PASSENGER_DOCUMENT",
-                    "Номер документа пассажира не должен повторяться внутри одного бронирования"
-            );
+            throw new BusinessException("DUPLICATE_PASSENGER_DOCUMENT",
+                    "Номер документа пассажира не должен повторяться внутри одного бронирования");
         }
     }
 
+    // чужая бронь выглядит как несуществующая (404)
+    private Booking getOwnedBooking(Long id, String username) {
+        return bookingRepository.findByIdAndOwnerUsername(id, username)
+                .orElseThrow(() -> new EntityNotFoundException("Booking", "id", id));
+    }
 
-    // реализации API
-//    @PostMapping("/bookings")
-    public BookingResponse createBooking(BookingRequest request) {
-        // 1. Найти рейс, иначе 404
+    // ---------- API ----------
+
+    // POST /bookings
+    @Transactional
+    public BookingResponse createBooking(BookingRequest request, String username) {
         Flight flight = flightService.getFlightEntityById(request.getFlightId());
 
-        // 2. Рейс должен быть SCHEDULED (правило 6: "создавать бронирования можно только на рейс в статусе SCHEDULED")
         if (flight.getStatus() != FlightStatus.SCHEDULED) {
             throw new BusinessException("FLIGHT_NOT_SCHEDULED", "Рейс недоступен для бронирования");
         }
-
-        // 3. Нельзя бронировать после отправления рейса
         if (flight.getDepartureDateTime().isBefore(ZonedDateTime.now())) {
             throw new BusinessException("FLIGHT_ALREADY_DEPARTED", "Рейс уже отправлен");
         }
 
-        // 4. Хватает ли мест в выбранном классе
         int available = flightService.getAvailableSeats(flight, request.getClassOfService());
-        int requested = request.getPassengers().size();
-        if (requested > available) {
+        if (request.getPassengers().size() > available) {
             throw new BusinessException("NOT_ENOUGH_SEATS", "Недостаточно свободных мест в выбранном классе");
         }
 
-        // 5. Документы пассажиров не повторяются внутри одной брони
         validateNoDuplicateDocuments(request.getPassengers());
 
-        // 6. Один пассажир не может иметь несколько активных броней на тот же рейс
         for (PassengerRequest p : request.getPassengers()) {
             long alreadyBooked = bookingRepository
                     .countActiveBookingsForPassengerAndFlight(p.getDocumentNumber(), flight.getId());
@@ -100,63 +101,128 @@ public class BookingService {
             }
         }
 
-        // 7. Собрать Entity, проставить служебные поля
+        AppUser owner = userRepository.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException("User", "username", username));
+
         Booking booking = bookingMapper.toEntity(request, flight);
         booking.setBookingCode(generateUniqueBookingCode());
         booking.setStatus(BookingStatus.CREATED);
         booking.setCreationDate(ZonedDateTime.now());
+        booking.setOwner(owner);
 
-        // 8. Сохранить
-        Booking saved = bookingRepository.save(booking);
-
-        return bookingMapper.toResponse(saved);
+        return bookingMapper.toResponse(bookingRepository.save(booking));
     }
 
-//    @GetMapping("/bookings/by-code/{bookingCode}")
-    public BookingResponse getBookingByCode(String bookingCode) {
-        Booking booking = bookingRepository.findByBookingCode(bookingCode)
+    // GET /bookings/{id}
+    @Transactional(readOnly = true)
+    public BookingResponse getBookingById(Long id, String username) {
+        return bookingMapper.toResponse(getOwnedBooking(id, username));
+    }
+
+    // GET /bookings/by-code/{code}
+    @Transactional(readOnly = true)
+    public BookingResponse getBookingByCode(String bookingCode, String username) {
+        Booking booking = bookingRepository.findByBookingCodeAndOwnerUsername(bookingCode, username)
                 .orElseThrow(() -> new EntityNotFoundException("Booking", "кодом", bookingCode));
         return bookingMapper.toResponse(booking);
     }
 
-//    @PostMapping("/bookings/{id}/confirm")
-    public BookingResponse confirmBooking(Long id) {
-        // 1. Найти бронирование, иначе 404
-        Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Booking","id", id));
-
-        // 2. Проверить допустимость перехода состояния
-        if (booking.getStatus() == BookingStatus.CANCELLED) {
-            throw new BusinessException("BOOKING_CANCELLED",
-                    "Нельзя подтвердить отменённое бронирование");
-        }
-        if (booking.getStatus() == BookingStatus.CONFIRMED) {
-            throw new BusinessException("ALREADY_CONFIRMED",
-                    "Бронирование уже подтверждено");
-        }
-
-        // 3. Выполнить переход CREATED -> CONFIRMED
-        booking.setStatus(BookingStatus.CONFIRMED);
-        booking.setConfirmationDate(ZonedDateTime.now());
-
-        // 4. Сохранить и вернуть DTO
-        Booking saved = bookingRepository.save(booking);
-        return bookingMapper.toResponse(saved);
+    // GET /bookings
+    @Transactional(readOnly = true)
+    public List<BookingResponse> getBookings(Long flightId, String username) {
+        List<Booking> bookings = flightId == null
+                ? bookingRepository.findByOwnerUsername(username)
+                : bookingRepository.findByOwnerUsernameAndFlightId(username, flightId);
+        return bookings.stream().map(bookingMapper::toResponse).toList();
     }
 
+    // POST /bookings/{id}/confirm   CREATED -> CONFIRMED
+    @Transactional
+    public BookingResponse confirmBooking(Long id, String username) {
+        Booking booking = getOwnedBooking(id, username);
 
-//    @PostMapping("/bookings/{id}/cancel")
-    public BookingResponse cancelBooking(Long id) {
-        // 1. Найти бронирование, иначе 404
-        Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Booking","id", id));
+        if (booking.getStatus() == BookingStatus.CANCELLED) {
+            throw new BusinessException("BOOKING_CANCELLED", "Нельзя подтвердить отменённое бронирование");
+        }
+        if (booking.getStatus() == BookingStatus.CONFIRMED) {
+            throw new BusinessException("ALREADY_CONFIRMED", "Бронирование уже подтверждено");
+        }
 
-        // 2. Выполнить переход CREATED -> CONFIRMED
-        booking.setStatus(BookingStatus.CANCELLED);
+        booking.setStatus(BookingStatus.CONFIRMED);
         booking.setConfirmationDate(ZonedDateTime.now());
+        return bookingMapper.toResponse(bookingRepository.save(booking));
+    }
 
-        // 4. Сохранить и вернуть DTO
-        Booking saved = bookingRepository.save(booking);
-        return bookingMapper.toResponse(saved);
+    // POST /bookings/{id}/cancel   CREATED | CONFIRMED -> CANCELLED
+    @Transactional
+    public BookingResponse cancelBooking(Long id, String username) {
+        Booking booking = getOwnedBooking(id, username);
+
+        if (booking.getStatus() == BookingStatus.CANCELLED) {
+            throw new BusinessException("ALREADY_CANCELLED", "Бронирование уже отменено");
+        }
+
+        // места освобождаются сами: отменённые брони не учитываются при подсчёте
+        booking.setStatus(BookingStatus.CANCELLED);
+        booking.setCancellationDate(ZonedDateTime.now());
+        return bookingMapper.toResponse(bookingRepository.save(booking));
+    }
+
+    // PUT /bookings/{id}
+    @Transactional
+    public BookingResponse updateBooking(Long id, BookingRequest request, String username) {
+        Booking booking = getOwnedBooking(id, username);
+
+        if (booking.getStatus() != BookingStatus.CREATED) {
+            throw new BusinessException("BOOKING_NOT_EDITABLE",
+                    "Изменять можно только бронирование в статусе CREATED");
+        }
+
+        Flight flight = booking.getFlight();
+        if (!flight.getId().equals(request.getFlightId())) {
+            throw new BusinessException("FLIGHT_CHANGE_NOT_ALLOWED",
+                    "Нельзя перенести бронирование на другой рейс, создайте новое");
+        }
+        if (flight.getStatus() != FlightStatus.SCHEDULED) {
+            throw new BusinessException("FLIGHT_NOT_SCHEDULED", "Рейс недоступен для бронирования");
+        }
+        if (flight.getDepartureDateTime().isBefore(ZonedDateTime.now())) {
+            throw new BusinessException("FLIGHT_ALREADY_DEPARTED", "Рейс уже отправлен");
+        }
+
+        // места, которые эта бронь уже занимает, считаются свободными для неё самой
+        int available = flightService.getAvailableSeats(flight, request.getClassOfService());
+        if (booking.getClassOfService() == request.getClassOfService()) {
+            available += booking.getPassengers().size();
+        }
+        if (request.getPassengers().size() > available) {
+            throw new BusinessException("NOT_ENOUGH_SEATS", "Недостаточно свободных мест в выбранном классе");
+        }
+
+        validateNoDuplicateDocuments(request.getPassengers());
+
+        for (PassengerRequest p : request.getPassengers()) {
+            long other = bookingRepository.countActiveBookingsForPassengerAndFlightExcluding(
+                    p.getDocumentNumber(), flight.getId(), id);
+            if (other > 0) {
+                throw new BusinessException("PASSENGER_ALREADY_BOOKED",
+                        "Пассажир уже имеет активное бронирование на этот рейс");
+            }
+        }
+
+        bookingMapper.updateEntity(request, booking);
+        return bookingMapper.toResponse(bookingRepository.save(booking));
+    }
+
+    // DELETE /bookings/{id}
+    @Transactional
+    public void deleteBooking(Long id, String username) {
+        Booking booking = getOwnedBooking(id, username);
+
+        if (booking.getStatus() != BookingStatus.CANCELLED) {
+            throw new BusinessException("BOOKING_NOT_CANCELLED",
+                    "Удалить можно только отменённое бронирование, сначала отмените его");
+        }
+        bookingRepository.delete(booking);
     }
 }

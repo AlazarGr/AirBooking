@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
@@ -36,14 +37,37 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     FROM Booking b
     JOIN b.passengers p
     WHERE b.flight.id = :flightId
-      AND p.documentsNumber = :documentsNumber
+      AND p.documentNumber = :documentNumber
       AND b.status IN (
           airline.booking.enums.BookingStatus.CREATED,
           airline.booking.enums.BookingStatus.CONFIRMED
       )
     """)
     long countActiveBookingsForPassengerAndFlight(
-            @Param("documentsNumber") String documentNumber,
+            @Param("documentNumber") String documentNumber,
             @Param("flightId") Long flightId
     );
+
+    boolean existsByFlightId(Long flightId);
+
+    List<Booking> findByFlightId(Long flightId);
+
+    @Query("""
+    select count(b)
+    from Booking b join b.passengers p
+    where b.flight.id = :flightId
+      and p.documentNumber = :documentNumber
+      and b.id <> :bookingId
+      and b.status in (airline.booking.enums.BookingStatus.CREATED,
+                       airline.booking.enums.BookingStatus.CONFIRMED)
+    """)
+    long countActiveBookingsForPassengerAndFlightExcluding(@Param("documentNumber") String documentNumber,
+                                                           @Param("flightId") Long flightId,
+                                                           @Param("bookingId") Long bookingId);
+
+
+    Optional<Booking> findByIdAndOwnerUsername(Long id, String username);
+    Optional<Booking> findByBookingCodeAndOwnerUsername(String bookingCode, String username);
+    List<Booking> findByOwnerUsername(String username);
+    List<Booking> findByOwnerUsernameAndFlightId(String username, Long flightId);
 }

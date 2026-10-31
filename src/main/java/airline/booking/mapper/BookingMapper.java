@@ -12,6 +12,7 @@ import jakarta.validation.constraints.NotNull;
 import org.springframework.stereotype.Component;
 
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 
 @Component
 public class BookingMapper {
@@ -55,6 +56,12 @@ public class BookingMapper {
         response.setConfirmationDate(booking.getConfirmationDate());
         response.setCancellationDate(booking.getCancellationDate());
         return response;
+    }
+
+    public void updateEntity(BookingRequest request, Booking booking) {
+        booking.setClassOfService(request.getClassOfService());
+        booking.setPassengers(new ArrayList<>(
+                request.getPassengers().stream().map(passengerMapper::toEntity).toList()));
     }
 }
 

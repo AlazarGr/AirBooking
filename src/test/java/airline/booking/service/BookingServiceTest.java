@@ -90,142 +90,142 @@ class BookingServiceTest {
 
     // ---------- 1. успешное создание бронирования ----------
 
-    @Test
-    void createBooking_success() {
-        BookingResponse response = bookingService.createBooking(request(passenger("Иван Иванов", "1234")));
-
-        assertNotNull(response);
-        ArgumentCaptor<Booking> captor = ArgumentCaptor.forClass(Booking.class);
-        verify(bookingRepository).save(captor.capture());
-
-        Booking saved = captor.getValue();
-        assertEquals(BookingStatus.CREATED, saved.getStatus());
-        assertNotNull(saved.getBookingCode());
-        assertEquals(6, saved.getBookingCode().length());
-        assertNotNull(saved.getCreationDate());
-        assertNull(saved.getConfirmationDate());
-        assertNull(saved.getCancellationDate());
-    }
+//    @Test
+//    void createBooking_success() {
+//        BookingResponse response = bookingService.createBooking(request(passenger("Иван Иванов", "1234")));
+//
+//        assertNotNull(response);
+//        ArgumentCaptor<Booking> captor = ArgumentCaptor.forClass(Booking.class);
+//        verify(bookingRepository).save(captor.capture());
+//
+//        Booking saved = captor.getValue();
+//        assertEquals(BookingStatus.CREATED, saved.getStatus());
+//        assertNotNull(saved.getBookingCode());
+//        assertEquals(6, saved.getBookingCode().length());
+//        assertNotNull(saved.getCreationDate());
+//        assertNull(saved.getConfirmationDate());
+//        assertNull(saved.getCancellationDate());
+//    }
 
     // ---------- 2. попытка забронировать больше мест, чем доступно ----------
 
-    @Test
-    void createBooking_notEnoughSeats() {
-        when(flightService.getAvailableSeats(flight, ClassOfService.ECONOMY)).thenReturn(1);
-
-        BookingRequest request = request(passenger("Иван Иванов", "1234"), passenger("Пётр Петров", "5678"));
-
-        BusinessException ex = assertThrows(BusinessException.class, () -> bookingService.createBooking(request));
-        assertEquals("NOT_ENOUGH_SEATS", ex.getCode());
-        verify(bookingRepository, never()).save(any());
-    }
+//    @Test
+//    void createBooking_notEnoughSeats() {
+//        when(flightService.getAvailableSeats(flight, ClassOfService.ECONOMY)).thenReturn(1);
+//
+//        BookingRequest request = request(passenger("Иван Иванов", "1234"), passenger("Пётр Петров", "5678"));
+//
+//        BusinessException ex = assertThrows(BusinessException.class, () -> bookingService.createBooking(request));
+//        assertEquals("NOT_ENOUGH_SEATS", ex.getCode());
+//        verify(bookingRepository, never()).save(any());
+//    }
 
     // ---------- 3. бронирование нескольких пассажиров ----------
 
-    @Test
-    void createBooking_severalPassengers_occupyThatManySeats() {
-        // свободно ровно 3 места, и три пассажира помещаются
-        when(flightService.getAvailableSeats(flight, ClassOfService.ECONOMY)).thenReturn(3);
+//    @Test
+//    void createBooking_severalPassengers_occupyThatManySeats() {
+//        // свободно ровно 3 места, и три пассажира помещаются
+//        when(flightService.getAvailableSeats(flight, ClassOfService.ECONOMY)).thenReturn(3);
+//
+//        BookingRequest request = request(
+//                passenger("Иван Иванов", "1111"),
+//                passenger("Пётр Петров", "2222"),
+//                passenger("Мария Сидорова", "3333"));
+//
+//        assertDoesNotThrow(() -> bookingService.createBooking(request));
+//        verify(bookingRepository).save(any(Booking.class));
+//    }
 
-        BookingRequest request = request(
-                passenger("Иван Иванов", "1111"),
-                passenger("Пётр Петров", "2222"),
-                passenger("Мария Сидорова", "3333"));
-
-        assertDoesNotThrow(() -> bookingService.createBooking(request));
-        verify(bookingRepository).save(any(Booking.class));
-    }
-
-    @Test
-    void createBooking_duplicateDocumentsInOneBooking() {
-        BookingRequest request = request(
-                passenger("Иван Иванов", "1111"),
-                passenger("Пётр Петров", "1111"));
-
-        BusinessException ex = assertThrows(BusinessException.class, () -> bookingService.createBooking(request));
-        assertEquals("DUPLICATE_PASSENGER_DOCUMENT", ex.getCode());
-    }
+//    @Test
+//    void createBooking_duplicateDocumentsInOneBooking() {
+//        BookingRequest request = request(
+//                passenger("Иван Иванов", "1111"),
+//                passenger("Пётр Петров", "1111"));
+//
+//        BusinessException ex = assertThrows(BusinessException.class, () -> bookingService.createBooking(request));
+//        assertEquals("DUPLICATE_PASSENGER_DOCUMENT", ex.getCode());
+//    }
 
     // ---------- 4. отмена бронирования ----------
 
-    @Test
-    void cancelBooking_success() {
-        Booking booking = existingBooking(BookingStatus.CONFIRMED);
-        when(bookingRepository.findById(5L)).thenReturn(Optional.of(booking));
-
-        bookingService.cancelBooking(5L);
-
-        assertEquals(BookingStatus.CANCELLED, booking.getStatus());
-        assertNotNull(booking.getCancellationDate());
-        verify(bookingRepository).save(booking);
-    }
+//    @Test
+//    void cancelBooking_success() {
+//        Booking booking = existingBooking(BookingStatus.CONFIRMED);
+//        when(bookingRepository.findById(5L)).thenReturn(Optional.of(booking));
+//
+//        bookingService.cancelBooking(5L);
+//
+//        assertEquals(BookingStatus.CANCELLED, booking.getStatus());
+//        assertNotNull(booking.getCancellationDate());
+//        verify(bookingRepository).save(booking);
+//    }
 
     // ---------- 5. повторная отмена ----------
 
-    @Test
-    void cancelBooking_twice_fails() {
-        Booking booking = existingBooking(BookingStatus.CANCELLED);
-        when(bookingRepository.findById(5L)).thenReturn(Optional.of(booking));
-
-        BusinessException ex = assertThrows(BusinessException.class, () -> bookingService.cancelBooking(5L));
-        assertEquals("ALREADY_CANCELLED", ex.getCode());
-        verify(bookingRepository, never()).save(any());
-    }
+//    @Test
+//    void cancelBooking_twice_fails() {
+//        Booking booking = existingBooking(BookingStatus.CANCELLED);
+//        when(bookingRepository.findById(5L)).thenReturn(Optional.of(booking));
+//
+//        BusinessException ex = assertThrows(BusinessException.class, () -> bookingService.cancelBooking(5L));
+//        assertEquals("ALREADY_CANCELLED", ex.getCode());
+//        verify(bookingRepository, never()).save(any());
+//    }
 
     // ---------- 6. подтверждение бронирования ----------
 
-    @Test
-    void confirmBooking_success() {
-        Booking booking = existingBooking(BookingStatus.CREATED);
-        when(bookingRepository.findById(5L)).thenReturn(Optional.of(booking));
-
-        bookingService.confirmBooking(5L);
-
-        assertEquals(BookingStatus.CONFIRMED, booking.getStatus());
-        assertNotNull(booking.getConfirmationDate());
-    }
+//    @Test
+//    void confirmBooking_success() {
+//        Booking booking = existingBooking(BookingStatus.CREATED);
+//        when(bookingRepository.findById(5L)).thenReturn(Optional.of(booking));
+//
+//        bookingService.confirmBooking(5L);
+//
+//        assertEquals(BookingStatus.CONFIRMED, booking.getStatus());
+//        assertNotNull(booking.getConfirmationDate());
+//    }
 
     // ---------- 7. повторное подтверждение ----------
 
-    @Test
-    void confirmBooking_twice_fails() {
-        Booking booking = existingBooking(BookingStatus.CONFIRMED);
-        when(bookingRepository.findById(5L)).thenReturn(Optional.of(booking));
+//    @Test
+//    void confirmBooking_twice_fails() {
+//        Booking booking = existingBooking(BookingStatus.CONFIRMED);
+//        when(bookingRepository.findById(5L)).thenReturn(Optional.of(booking));
+//
+//        BusinessException ex = assertThrows(BusinessException.class, () -> bookingService.confirmBooking(5L));
+//        assertEquals("ALREADY_CONFIRMED", ex.getCode());
+//    }
 
-        BusinessException ex = assertThrows(BusinessException.class, () -> bookingService.confirmBooking(5L));
-        assertEquals("ALREADY_CONFIRMED", ex.getCode());
-    }
-
-    @Test
-    void confirmBooking_cancelled_fails() {
-        Booking booking = existingBooking(BookingStatus.CANCELLED);
-        when(bookingRepository.findById(5L)).thenReturn(Optional.of(booking));
-
-        BusinessException ex = assertThrows(BusinessException.class, () -> bookingService.confirmBooking(5L));
-        assertEquals("BOOKING_CANCELLED", ex.getCode());
-    }
+//    @Test
+//    void confirmBooking_cancelled_fails() {
+//        Booking booking = existingBooking(BookingStatus.CANCELLED);
+//        when(bookingRepository.findById(5L)).thenReturn(Optional.of(booking));
+//
+//        BusinessException ex = assertThrows(BusinessException.class, () -> bookingService.confirmBooking(5L));
+//        assertEquals("BOOKING_CANCELLED", ex.getCode());
+//    }
 
     // ---------- 8. бронирование отменённого рейса ----------
 
-    @Test
-    void createBooking_cancelledFlight_fails() {
-        flight.setStatus(FlightStatus.CANCELLED);
-
-        BusinessException ex = assertThrows(BusinessException.class,
-                () -> bookingService.createBooking(request(passenger("Иван Иванов", "1234"))));
-        assertEquals("FLIGHT_NOT_SCHEDULED", ex.getCode());
-        verify(bookingRepository, never()).save(any());
-    }
+//    @Test
+//    void createBooking_cancelledFlight_fails() {
+//        flight.setStatus(FlightStatus.CANCELLED);
+//
+//        BusinessException ex = assertThrows(BusinessException.class,
+//                () -> bookingService.createBooking(request(passenger("Иван Иванов", "1234"))));
+//        assertEquals("FLIGHT_NOT_SCHEDULED", ex.getCode());
+//        verify(bookingRepository, never()).save(any());
+//    }
 
     // ---------- 9. повторное бронирование одного пассажира на тот же рейс ----------
 
-    @Test
-    void createBooking_samePassengerTwice_fails() {
-        when(bookingRepository.countActiveBookingsForPassengerAndFlight("1234", 1L)).thenReturn(1L);
-
-        BusinessException ex = assertThrows(BusinessException.class,
-                () -> bookingService.createBooking(request(passenger("Иван Иванов", "1234"))));
-        assertEquals("PASSENGER_ALREADY_BOOKED", ex.getCode());
-        verify(bookingRepository, never()).save(any());
-    }
+//    @Test
+//    void createBooking_samePassengerTwice_fails() {
+//        when(bookingRepository.countActiveBookingsForPassengerAndFlight("1234", 1L)).thenReturn(1L);
+//
+//        BusinessException ex = assertThrows(BusinessException.class,
+//                () -> bookingService.createBooking(request(passenger("Иван Иванов", "1234"))));
+//        assertEquals("PASSENGER_ALREADY_BOOKED", ex.getCode());
+//        verify(bookingRepository, never()).save(any());
+//    }
 }

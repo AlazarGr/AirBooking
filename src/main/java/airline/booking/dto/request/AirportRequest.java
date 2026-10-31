@@ -2,8 +2,14 @@ package airline.booking.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
-//"LomBok"
+
+@Getter
+@Setter
+@RequiredArgsConstructor
 public class AirportRequest {
 
     @NotBlank
@@ -15,28 +21,4 @@ public class AirportRequest {
 
     @NotBlank
     private String city;
-
-    public String getIataCode() {
-        return iataCode;
-    }
-
-    public void setIataCode(String iataCode) {
-        this.iataCode = iataCode;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getCity() {
-        return city;
-    }
-
-    public void setCity(String city) {
-        this.city = city;
-    }
 }
