@@ -46,20 +46,8 @@ public class FlightController {
     }
 
     @GetMapping("/all")
-    public List<FlightResponse> getAllFlights() {
-        return flightService.getAllFlights();
-    }
-
-    @PutMapping("/{id}")
-    public FlightResponse updateFlight(@PathVariable("id") Long id,
-                                       @Valid @RequestBody FlightRequest request) {
-        return flightService.updateFlight(id, request);
-    }
-
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteFlight(@PathVariable("id") Long id) {
-        flightService.deleteFlight(id);
+    public List<FlightResponse> getAll() {
+        return flightService.getAll();
     }
 
     @PostMapping("/{id}/cancel")

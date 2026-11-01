@@ -36,7 +36,7 @@ public class FlightService {
     // ---------- вспомогательные методы (нужны и BookingService) ----------
 
     @Transactional(readOnly = true)
-    public Flight getFlightEntityById(Long flightId) {
+    public Flight getEntityById(Long flightId) {
         return flightRepository.findById(flightId)
                 .orElseThrow(() -> new EntityNotFoundException("Flight", "id", flightId));
     }
@@ -101,7 +101,7 @@ public class FlightService {
     // GET /flights/{id}
     @Transactional(readOnly = true)
     public FlightResponse getFlightById(Long id) {
-        return toResponse(getFlightEntityById(id));
+        return toResponse(getEntityById(id));
     }
 
     // GET /flights?from=&to=&date=  (+ необязательный arrivalDate)
@@ -122,63 +122,14 @@ public class FlightService {
 
     // GET /flights/all
     @Transactional(readOnly = true)
-    public List<FlightResponse> getAllFlights() {
+    public List<FlightResponse> getAll() {
         return flightRepository.findAll().stream().map(this::toResponse).toList();
-    }
-
-    // PUT /flights/{id}
-    @Transactional
-    public FlightResponse updateFlight(Long id, FlightRequest request) {
-        Flight flight = getFlightEntityById(id);
-
-        if (flight.getStatus() != FlightStatus.SCHEDULED) {
-            throw new BusinessException("FLIGHT_NOT_SCHEDULED",
-                    "Изменять можно только рейс в статусе SCHEDULED");
-        }
-
-        Airport departure = airportService.getByIataCode(request.getDepartureAirportIataCode());
-        Airport arrival = airportService.getByIataCode(request.getArrivalAirportIataCode());
-        validateRoute(request, departure, arrival);
-
-        if (flightRepository.existsByFlightNumberAndDepartureDateTimeAndIdNot(
-                request.getFlightNumber(), request.getDepartureDateTime(), id)) {
-            throw new BusinessException("DUPLICATE_FLIGHT",
-                    "Рейс с таким номером и временем отправления уже существует");
-        }
-
-        long occupiedEconomy = bookingRepository.countActivePassengersByFlightAndClass(id, ClassOfService.ECONOMY);
-        long occupiedBusiness = bookingRepository.countActivePassengersByFlightAndClass(id, ClassOfService.BUSINESS);
-        if (request.getEconomySeats() < occupiedEconomy || request.getBusinessSeats() < occupiedBusiness) {
-            throw new BusinessException("SEATS_BELOW_BOOKED",
-                    "Нельзя сделать мест меньше, чем уже занято бронированиями");
-        }
-
-        flight.setFlightNumber(request.getFlightNumber());
-        flight.setDepartureAirport(departure);
-        flight.setArrivalAirport(arrival);
-        flight.setDepartureDateTime(request.getDepartureDateTime());
-        flight.setArrivalDateTime(request.getArrivalDateTime());
-        flight.setEconomySeats(request.getEconomySeats());
-        flight.setBusinessSeats(request.getBusinessSeats());
-
-        return toResponse(flightRepository.save(flight));
-    }
-
-    // DELETE /flights/{id}
-    @Transactional
-    public void deleteFlight(Long id) {
-        Flight flight = getFlightEntityById(id);
-        if (bookingRepository.existsByFlightId(id)) {
-            throw new BusinessException("FLIGHT_HAS_BOOKINGS",
-                    "Нельзя удалить рейс, на который есть бронирования");
-        }
-        flightRepository.delete(flight);
     }
 
     // POST /flights/{id}/cancel   SCHEDULED -> CANCELLED
     @Transactional
     public FlightResponse cancelFlight(Long id) {
-        Flight flight = getFlightEntityById(id);
+        Flight flight = getEntityById(id);
 
         if (flight.getStatus() == FlightStatus.CANCELLED) {
             throw new BusinessException("FLIGHT_ALREADY_CANCELLED", "Рейс уже отменён");

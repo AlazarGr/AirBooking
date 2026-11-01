@@ -31,7 +31,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         // чтение и поиск рейсов открыты всем
-                        .requestMatchers(HttpMethod.GET, "/flights", "/flights/all", "/flights/id").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/flights", "/flights/all", "/flights/{id}").permitAll()
                         // остальное по рейсам (создание, изменение, удаление, отмена) только админу
                         .requestMatchers("/flights/**").hasRole("ADMIN")
                         // брони только клиенту

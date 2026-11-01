@@ -41,18 +41,6 @@ public class BookingController {
         return bookingService.getBookingByCode(bookingCode, principal.getName());
     }
 
-    @PutMapping("/{id}")
-    public BookingResponse updateBooking(@PathVariable("id") Long id,
-                                         @Valid @RequestBody BookingRequest request, Principal principal) {
-        return bookingService.updateBooking(id, request, principal.getName());
-    }
-
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteBooking(@PathVariable("id") Long id, Principal principal) {
-        bookingService.deleteBooking(id, principal.getName());
-    }
-
     @PostMapping("/{id}/confirm")
     public BookingResponse confirmBooking(@PathVariable("id") Long id, Principal principal) {
         return bookingService.confirmBooking(id, principal.getName());

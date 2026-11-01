@@ -20,7 +20,7 @@ public class AuthService {
 
     private final AppUserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtTokenProvider jwtTokenProvider; // 1. Добавляем провайдер токенов
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Transactional
     public UserResponse register(RegisterRequest request) {
@@ -35,7 +35,7 @@ public class AuthService {
         return new UserResponse(saved.getId(), saved.getUsername(), saved.getRole().name());
     }
 
-    // 2. Изменяем метод login для выдачи JWT
+
     public JwtResponse login(LoginRequest request) {
         AppUser user = userRepository.findByUsername(request.username())
                 .orElseThrow(() -> new BusinessException("USER_NOT_FOUND", "Пользователь с таким именем не найден"));

@@ -1,6 +1,5 @@
 package airline.booking.repository;
 
-import airline.booking.dto.response.BookingResponse;
 import airline.booking.enums.ClassOfService;
 import airline.booking.model.Booking;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -43,7 +42,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
           airline.booking.enums.BookingStatus.CONFIRMED
       )
     """)
-    long countActiveBookingsForPassengerAndFlight(
+    long countActiveForPassengerAndFlight(
             @Param("documentNumber") String documentNumber,
             @Param("flightId") Long flightId
     );
@@ -61,9 +60,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
       and b.status in (airline.booking.enums.BookingStatus.CREATED,
                        airline.booking.enums.BookingStatus.CONFIRMED)
     """)
-    long countActiveBookingsForPassengerAndFlightExcluding(@Param("documentNumber") String documentNumber,
-                                                           @Param("flightId") Long flightId,
-                                                           @Param("bookingId") Long bookingId);
+    long countActiveForPassengerAndFlightExcluding(@Param("documentNumber") String documentNumber,
+                                                   @Param("flightId") Long flightId,
+                                                   @Param("bookingId") Long bookingId);
 
 
     Optional<Booking> findByIdAndOwnerUsername(Long id, String username);
